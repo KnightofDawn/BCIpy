@@ -5,7 +5,7 @@ from sklearn.externals import joblib
 import sys
 from PyQt5.Qt import QApplication
 from keyboard import KEYBOARD
-from Offline.config import load_config
+from config import load_config
 
 # load config
 config = load_config()

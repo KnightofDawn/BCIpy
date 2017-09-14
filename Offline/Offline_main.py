@@ -1,4 +1,4 @@
-from Offline.config import load_config, write_config
+from config import load_config, write_config
 from Offline.bytes2npz import bytes2npz
 from Offline.featrue_extractor import *
 from Offline.classifier_training import *
