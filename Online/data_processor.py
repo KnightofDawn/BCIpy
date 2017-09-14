@@ -68,7 +68,6 @@ class DataProcessor(DataClient):
         filt_data = feature_extractor(self.epoches[self.onset_cnt][None, ::self.downsamplingscale],
                                       samplerate=self.sampleRate,
                                       erp_band=self.erpband,
-                                      usehg=False,
                                       scaler=self.scaler)
 
         self.prediction[self.onset_cnt] = self.classification_model.predict(filt_data)

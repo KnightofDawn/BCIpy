@@ -43,3 +43,4 @@ if __name__ == '__main__':
     target = get_target(sti_order=sti_order, n_rep_exp=n_rep, n_rep_train=n_rep_train)
     # train and save SVM model
     scores = train_svm(feature=features, target=target, save_model=True)
+    print(scores.mean())
