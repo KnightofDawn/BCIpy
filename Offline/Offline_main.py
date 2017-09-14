@@ -18,7 +18,7 @@ if __name__ == '__main__':
     # search trigger signal
     tri_pos = trigger_search(trigger_channel_data=data[:, -1], samplerate=samplerate, plot=False)
     # extract trigger potential return 2d signal
-    data_tri = signal_reshape(data, trigger_pos=tri_pos, t_head=0, t_tail=.5, samplerate=samplerate)
+    data_tri = signal_reshape(data, trigger_pos=tri_pos, t_head=0, t_tail=.5, samplerate=samplerate, nChan=nChan)
     # average
     data_for_training = average_signal(data_tri, n_rep_exp=n_rep, n_rep_train=n_rep_train)
     # plot spectrogram
@@ -28,19 +28,22 @@ if __name__ == '__main__':
     erp_band_high = input('input erp band high')
     t_head = input('input t start')
     t_tail = input('input t end')
+    best_channel = input('input best channel')
     # refresh Config.csv
     config['erp_band_low'] = erp_band_low
     config['erp_band_high'] = erp_band_high
     config['t_head'] = t_head
     config['t_tail'] = t_tail
+    config['best_channel'] = best_channel
     write_config(config_path, config, mode='w')
     # extract features
-    features = feature_extractor(data_for_training, samplerate, erp_band=np.array([erp_band_low, erp_band_high]))
+    features = feature_extractor(data_for_training[:, best_channel], samplerate, erp_band=np.array([erp_band_low, erp_band_high]))
     # load sti_order file
     sti_order_path = ''
     sti_order = np.load(sti_order_path)['sti_order']
     # get target
-    target = get_target(sti_order=sti_order, n_rep_exp=n_rep, n_rep_train=n_rep_train)
+    sti_string = ['A', 'H', 'O', 'V', '2', '9']
+    target = get_target(sti_order=sti_order, sti_string=sti_string, n_rep_exp=n_rep, n_rep_train=n_rep_train)
     # train and save SVM model
     scores = train_svm(feature=features, target=target, save_model=True)
     print(scores.mean())
