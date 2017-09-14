@@ -4,12 +4,17 @@
 # show the chosen position
 # parameter: test string
 from PyQt5.Qt import QDialog
+from PyQt5 import QtGui
 from Online.UI_screen import Ui_Dialog
-
+from PyQt5.Qt import QParallelAnimationGroup, QPropertyAnimation
 
 class Screen(QDialog, Ui_Dialog):
     def __init__(self):
         super(Screen, self).__init__()
+        # set background color
+        pal = QtGui.QPalette()
+        pal.setColor(QtGui.QPalette.Background, QtGui.QColor(255, 255, 255))
+        self.setPalette(pal)
         self.string_buf = []
 
     def process_char(self, new_char):

@@ -1,12 +1,15 @@
 import numpy as np
+from Offline.featrue_extractor import feature_extractor
 from Online.Client import DataClient
 from sklearn.externals import joblib
-from scipy import signal
 import sys
 from PyQt5.Qt import QApplication
+from keyboard import KEYBOARD
 
 # set parameter
-nChan = 2
+nChan = 9
+# currently only support single channel
+chosen_channel = [0]
 # in seconds
 updateInterval = 0.04
 sampleRate = 250
@@ -16,56 +19,57 @@ serverPort = 8712
 bufferSize = 0.5
 th_p = 0.7
 repeat_time = 3
-norm_fac = 1.
 fsErp = np.array([1, 20])
+usehg = False
 # in seconds
 cut_pos_head = .2
 cut_pos_tail = .5
 mode = 'smart_stopping'
 assert mode in ['smart_stopping', 'fixed_trials']
 
-# 6x6 keyboard
-keyboard_book = np.array([['A', 'B', 'C', 'D', 'E', 'F'],
-                          ['G', 'H', 'I', 'J', 'K', 'L'],
-                          ['M', 'N', 'O', 'P', 'Q', 'R'],
-                          ['S', 'T', 'U', 'V', 'W', 'X'],
-                          ['Y', 'Z', '0', '1', '2', '3'],
-                          ['4', '5', '6', '7', '8', '9']])
-
 
 class DataProcessor(DataClient):
-    def __init__(self, istraining=False, cut_pos_head=0., cut_pos_tail=.5, **kwargs):
+    def __init__(self, fserp, chosen_channel, istraining=False, cut_pos_head=0., cut_pos_tail=.5, **kwargs):
         super(DataProcessor, self).__init__(**kwargs)
-        self.cut_pos_head = cut_pos_head
-        self.cut_pos_tail = cut_pos_tail
+        self._chosen_channel = chosen_channel
+        self._cut_pos_head = cut_pos_head
+        self._cut_pos_tail = cut_pos_tail
         trial_buf_len = round(self.sampleRate * (cut_pos_tail - cut_pos_head))
-        self.epoches = np.zeros((12, trial_buf_len, self.nChan - 1))
+        self.epoches = np.zeros((12, trial_buf_len, len(chosen_channel)))
         self.training_flag = istraining
         try:
-            self.classification_model = joblib.load('svm_model')
+            self.classification_model = joblib.load('../svm_model.pkl')
+            self.scaler = joblib.load('../feature_scaler.pkl')
         except Exception as err:
+            self.classification_model = None
+            self.scaler = None
             print(err)
         self.prediction = np.zeros((12,))
 
-        self.b, self.a = signal.butter(3, fsErp * 2 / self.sampleRate, 'bandpass')
+        # self.b, self.a = signal.butter(3, fsErp * 2 / self.sampleRate, 'bandpass')
+        self.erpband = fserp
 
         self.onset_cnt = 0
         self.trial_cnt = 1
 
         self.downsamplingscale = self.sampleRate // 200
 
+        # 6x6 keyboard
+        self.keyboard_book = KEYBOARD
+
     def process_trial(self, onset_index):
-        begin = onset_index + round(cut_pos_head * self.sampleRate)
-        end = onset_index + round(cut_pos_tail * self.sampleRate)
+        begin = onset_index + round(self._cut_pos_head * self.sampleRate)
+        end = onset_index + round(self._cut_pos_tail * self.sampleRate)
         # average
-        temp = self.data[begin: end, :-1]
+        temp = self.data[begin: end, self._chosen_channel]
         self.epoches[self.onset_cnt] = (self.trial_cnt - 1) / self.trial_cnt * self.epoches[
             self.onset_cnt] + temp / self.trial_cnt
         # filtering, downsampling and normalizing
-        filt_data = signal.filtfilt(self.b, self.a, self.epoches[self.onset_cnt], axis=0)[
-                    ::self.downsamplingscale] / norm_fac
-        # flatten
-        filt_data = filt_data.flatten()
+        filt_data = feature_extractor(self.epoches[self.onset_cnt][None, ::self.downsamplingscale],
+                                      samplerate=self.sampleRate,
+                                      erp_band=self.erpband,
+                                      usehg=False,
+                                      scaler=self.scaler)
 
         self.prediction[self.onset_cnt] = self.classification_model.predict(filt_data)
 
@@ -82,7 +86,7 @@ class DataProcessor(DataClient):
                 p2 /= np.sum(p2)
                 pos1 = np.argmax(p1)
                 pos2 = np.argmax(p2)
-                input_char = keyboard_book[pos1, pos2]
+                input_char = self.keyboard_book[pos1, pos2]
                 if p1[pos1] * p2[pos2] > th_p:
                     # print(input_char)
                     # clear epoches
@@ -95,10 +99,9 @@ class DataProcessor(DataClient):
                 if self.trial_cnt >= repeat_time:
                     pos1 = np.argmax(self.prediction[:6])
                     pos2 = np.argmax(self.prediction[6:])
-                    return keyboard_book[pos1, pos2]
+                    return self.keyboard_book[pos1, pos2]
                 else:
                     self.trial_cnt += 1
-
         return None
 
     def get_data(self):
@@ -127,18 +130,19 @@ class DataProcessor(DataClient):
 
 
 if __name__ == "__main__":
-    # create qt object to run qtimer
+    # create qt object to run Qtimer
     app = QApplication(sys.argv)
     # connect
-    window = DataProcessor(istraining=False,
-                            cut_pos_head=cut_pos_head,
-                            cut_pos_tail=cut_pos_tail,
-                            updateInterval=updateInterval,
-                            ipAddress=ipAddress,
-                            serverPort=serverPort,
-                            nChan=nChan,
-                            sampleRate=sampleRate,
-                            bufferSize=bufferSize)
+    window = DataProcessor(chosen_channel=chosen_channel,
+                           istraining=False,
+                           cut_pos_head=cut_pos_head,
+                           cut_pos_tail=cut_pos_tail,
+                           updateInterval=updateInterval,
+                           ipAddress=ipAddress,
+                           serverPort=serverPort,
+                           nChan=nChan,
+                           sampleRate=sampleRate,
+                           bufferSize=bufferSize)
     window.show()
 
     exit(app.exec_())

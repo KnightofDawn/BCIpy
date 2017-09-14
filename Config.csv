@@ -1,0 +1,9 @@
+nChan,9
+t_head,0.2
+t_tail,0.5
+samplerate,2000
+subjname,default
+n_rep,10
+n_rep_train,3
+erp_band_low,1
+erp_band_high,20

@@ -110,12 +110,20 @@ p, li { white-space: pre-wrap; }
    </property>
    <widget class="QMenu" name="menuOperation">
     <property name="title">
-     <string>Opt</string>
+     <string>Connection</string>
     </property>
     <addaction name="actionConnect"/>
     <addaction name="actionDisconnect"/>
    </widget>
+   <widget class="QMenu" name="menuRecording">
+    <property name="title">
+     <string>Recording</string>
+    </property>
+    <addaction name="actionStart"/>
+    <addaction name="actionStop"/>
+   </widget>
    <addaction name="menuOperation"/>
+   <addaction name="menuRecording"/>
   </widget>
   <widget class="QStatusBar" name="statusbar"/>
   <action name="actionConnect">
@@ -126,6 +134,16 @@ p, li { white-space: pre-wrap; }
   <action name="actionDisconnect">
    <property name="text">
     <string>Disconnect</string>
+   </property>
+  </action>
+  <action name="actionStart">
+   <property name="text">
+    <string>Start</string>
+   </property>
+  </action>
+  <action name="actionStop">
+   <property name="text">
+    <string>Stop</string>
    </property>
   </action>
  </widget>

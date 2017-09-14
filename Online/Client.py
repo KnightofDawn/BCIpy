@@ -1,6 +1,7 @@
 import socket
 import struct
-from os.path import isfile
+from os.path import isfile, join
+from os import mkdir
 import datetime
 import numpy as np
 import pyqtgraph as pg
@@ -26,7 +27,7 @@ class DataClient(QMainWindow, Ui_MainWindow):
         self.sampleRate = sampleRate
 
         self.data = np.empty((0, nChan))
-        self.TCPIP = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.TCPIP = None
         self.bufsize = round(bufferSize * sampleRate)
         if round(sampleRate * updateInterval) > 1:
             self.updatepoints = round(sampleRate * updateInterval)
@@ -44,6 +45,8 @@ class DataClient(QMainWindow, Ui_MainWindow):
         self.setupUi(self)
         self.actionConnect.triggered.connect(self._connect)
         self.actionDisconnect.triggered.connect(self._disconnect)
+        self.actionStart.triggered.connect(self.start_recording)
+        self.actionStop.triggered.connect(self.end_recording)
         self.pushButton.clicked.connect(self.sti_screen)
         self.graph.plotItem.showGrid(True, True, 0.7)
 
@@ -52,26 +55,37 @@ class DataClient(QMainWindow, Ui_MainWindow):
         self.data_timer.timeout.connect(self.get_data)
         # plotting clock
         self.plotting_timer = QTimer()
-        self.plotting_timer.timeout.connect(self.updateframe)
+        self.plotting_timer.timeout.connect(self.update_frame)
 
     def _connect(self):
         self.cumtime = 0.
+        # connect tcpip socket
+        self.TCPIP = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        try:
+            self.TCPIP.connect((self.ipAddress, self.serverPort))
+        except Exception as err:
+            print(err)
+            return
+        print('Succesfully connected.')
+        # start timer
+        self.data_timer.start(self.updateInterval)
+        self.plotting_timer.start(self.updateInterval)
+
+    def start_recording(self):
         # create save path
         username = self.textEdit.toPlainText()
+        try:
+            mkdir(join('../data', username))
+        except:
+            pass
         time = datetime.date.today().strftime('%m-%d-%y')
-        filename = username + '_' + time
+        filename = join('../data', username, time)
 
         index = 0
         while isfile(filename + '_%d' % index):
             index += 1
         self.filecursor = open(filename + '_%d' % index, 'a')
-
-        # connect tcpip socket
-        self.TCPIP.connect((self.ipAddress, self.serverPort))
-        print('Succesfully connected.')
-        # start timer
-        self.data_timer.start(self.updateInterval)
-        self.plotting_timer.start(self.updateInterval)
+        print('Start recording data, file name: %s' % (filename + '_%d' % index))
 
     def get_data(self):
         self.cumtime += self.updateInterval
@@ -79,12 +93,13 @@ class DataClient(QMainWindow, Ui_MainWindow):
         raw_data = ''
         while len(raw_data) < self.BytesCnt:
             raw_data += self.TCPIP.recv(self.BytesCnt - len(raw_data))
-        self.filecursor.write(raw_data)
+        if self.filecursor is not None:
+            self.filecursor.write(raw_data)
         # reshape and interp as float
         length_rawdata = len(raw_data)
         num_rawdata = length_rawdata // 4
         data_interpreted = struct.unpack(str(num_rawdata) + 'f', raw_data)
-        data_channel = np.reshape(data_interpreted, (num_rawdata // self.nChan, self.nChan))
+        data_channel = np.reshape(data_interpreted, (-1, self.nChan))
 
         # cut if too long
         userdatalength = self.data.shape[0] + data_channel.shape[0]
@@ -94,15 +109,19 @@ class DataClient(QMainWindow, Ui_MainWindow):
         else:
             self.data = np.row_stack((self.data, data_channel))
 
-    def updateframe(self):
+    def update_frame(self):
         x = np.linspace(0, self.data.shape[0] // self.sampleRate, self.data.shape[0]) + self.cumtime
         self.graph.plot(x, self.data[:, :-1])
         self.graph_2.plot(x, self.data[:, -1])
         QApplication.processEvents()
 
+    def end_recording(self):
+        self.filecursor.close()
+        self.filecursor = None
+        print('End recording.')
+
     def _disconnect(self):
         self.cumtime = 0
-        self.filecursor.close()
         self.TCPIP.close()
         self.data_timer.stop()
         self.plotting_timer.stop()
