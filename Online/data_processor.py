@@ -5,27 +5,28 @@ from sklearn.externals import joblib
 import sys
 from PyQt5.Qt import QApplication
 from keyboard import KEYBOARD
+from Offline.config import load_config
 
-# set parameter
-nChan = 9
+# load config
+config = load_config()
+nChan = int(config['nChan'])
 # currently only support single channel
-chosen_channel = [0]
+chosen_channel = int(config['nChan'])
+sampleRate = int(config['samplerate'])
+repeat_time = int(config['n_rep_train'])
+fsErp = np.array([float(config['erp_band_low']), float(config['erp_band_high'])])
+cut_pos_head = float(config['t_head'])
+cut_pos_tail = float(config['t_tail'])
 # in seconds
 updateInterval = 0.04
-sampleRate = 250
 ipAddress = 'localhost'
 serverPort = 8712
 # in seconds
 bufferSize = 0.5
+# prediction probability threshold
 th_p = 0.7
-repeat_time = 3
-fsErp = np.array([1, 20])
-usehg = False
-# in seconds
-cut_pos_head = .2
-cut_pos_tail = .5
 mode = 'smart_stopping'
-assert mode in ['smart_stopping', 'fixed_trials']
+assert mode in ['smart_stopping', 'fixed_trials'], 'Unsupported mode'
 
 
 class DataProcessor(DataClient):

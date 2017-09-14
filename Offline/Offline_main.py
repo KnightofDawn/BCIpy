@@ -5,7 +5,7 @@ from Offline.classifier_training import *
 
 if __name__ == '__main__':
     config_path = '../Config.csv'
-    config = load_config(config_path=config_path)
+    config = load_config()
     nChan = int(config['nChan'])
     samplerate = int(config['samplerate'])
     subjname = config['subjname']
@@ -35,7 +35,7 @@ if __name__ == '__main__':
     config['t_head'] = t_head
     config['t_tail'] = t_tail
     config['best_channel'] = best_channel
-    write_config(config_path, config, mode='w')
+    write_config(config, mode='w')
     # extract features
     features = feature_extractor(data_for_training[:, best_channel], samplerate, erp_band=np.array([erp_band_low, erp_band_high]))
     # load sti_order file
