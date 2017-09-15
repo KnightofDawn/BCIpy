@@ -89,13 +89,26 @@ p, li { white-space: pre-wrap; }
     <property name="geometry">
      <rect>
       <x>600</x>
-      <y>30</y>
+      <y>10</y>
       <width>89</width>
       <height>25</height>
      </rect>
     </property>
     <property name="text">
      <string>Screen</string>
+    </property>
+   </widget>
+   <widget class="QPushButton" name="pushButton_2">
+    <property name="geometry">
+     <rect>
+      <x>600</x>
+      <y>40</y>
+      <width>89</width>
+      <height>25</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>Run</string>
     </property>
    </widget>
   </widget>

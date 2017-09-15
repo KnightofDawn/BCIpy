@@ -12,7 +12,7 @@ from Online.screen import Screen
 
 # Tcp/Ip client and main GUI class
 class DataClient(QMainWindow, Ui_MainWindow):
-    def __init__(self,
+    def __init__(self, istraining,
                  updateInterval,
                  ipAddress,
                  serverPort,
@@ -41,13 +41,14 @@ class DataClient(QMainWindow, Ui_MainWindow):
         pg.setConfigOption('background', 'w')
         pg.setConfigOption('foreground', 'k')
         super(DataClient, self).__init__()
-        self.screen = Screen()
+        self.screen = Screen(istraining=istraining)
         self.setupUi(self)
         self.actionConnect.triggered.connect(self._connect)
         self.actionDisconnect.triggered.connect(self._disconnect)
         self.actionStart.triggered.connect(self.start_recording)
         self.actionStop.triggered.connect(self.end_recording)
         self.pushButton.clicked.connect(self.sti_screen)
+        self.pushButton_2.clicked.connect(self.screen.run_experiment)
         self.graph.plotItem.showGrid(True, True, 0.7)
 
         # data receiver clock
@@ -88,6 +89,8 @@ class DataClient(QMainWindow, Ui_MainWindow):
         print('Start recording data, file name: %s' % (filename + '_%d' % index))
 
     def get_data(self):
+        print('get_data is running')
+        print(self.cumtime)
         self.cumtime += self.updateInterval
         # receive raw bytes
         raw_data = ''
@@ -110,6 +113,7 @@ class DataClient(QMainWindow, Ui_MainWindow):
             self.data = np.row_stack((self.data, data_channel))
 
     def update_frame(self):
+        print('update_frame is running')
         x = np.linspace(0, self.data.shape[0] // self.sampleRate, self.data.shape[0]) + self.cumtime
         self.graph.plot(x, self.data[:, :-1])
         self.graph_2.plot(x, self.data[:, -1])

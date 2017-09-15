@@ -24,11 +24,11 @@ if __name__ == '__main__':
     # plot spectrogram
     # wait for implementing
     # input erp_band and t start t end
-    erp_band_low = input('input erp band low')
-    erp_band_high = input('input erp band high')
-    t_head = input('input t start')
-    t_tail = input('input t end')
-    best_channel = input('input best channel')
+    erp_band_low = input('input Erp band low:')
+    erp_band_high = input('input Erp band high:')
+    t_head = input('input t start:')
+    t_tail = input('input t end:')
+    best_channel = input('input best channel:')
     # refresh Config.csv
     config['erp_band_low'] = erp_band_low
     config['erp_band_high'] = erp_band_high

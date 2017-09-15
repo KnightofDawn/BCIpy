@@ -28,15 +28,15 @@ th_p = 0.7
 mode = 'smart_stopping'
 assert mode in ['smart_stopping', 'fixed_trials'], 'Unsupported mode'
 
-
+# trigger问题尚未解决
 class DataProcessor(DataClient):
     def __init__(self, fserp, chosen_channel, istraining=False, cut_pos_head=0., cut_pos_tail=.5, **kwargs):
-        super(DataProcessor, self).__init__(**kwargs)
+        super(DataProcessor, self).__init__(istraining=istraining, **kwargs)
         self._chosen_channel = chosen_channel
         self._cut_pos_head = cut_pos_head
         self._cut_pos_tail = cut_pos_tail
         trial_buf_len = round(self.sampleRate * (cut_pos_tail - cut_pos_head))
-        self.epoches = np.zeros((12, trial_buf_len, len(chosen_channel)))
+        self.epoches = np.zeros((12, trial_buf_len))
         self.training_flag = istraining
         try:
             self.classification_model = joblib.load('../svm_model.pkl')
@@ -61,7 +61,7 @@ class DataProcessor(DataClient):
     def process_trial(self, onset_index):
         begin = onset_index + round(self._cut_pos_head * self.sampleRate)
         end = onset_index + round(self._cut_pos_tail * self.sampleRate)
-        # average
+        # mean filter
         temp = self.data[begin: end, self._chosen_channel]
         self.epoches[self.onset_cnt] = (self.trial_cnt - 1) / self.trial_cnt * self.epoches[
             self.onset_cnt] + temp / self.trial_cnt
@@ -90,7 +90,7 @@ class DataProcessor(DataClient):
                 if p1[pos1] * p2[pos2] > th_p:
                     # print(input_char)
                     # clear epoches
-                    self.epoches[:, :, :] = 0
+                    self.epoches[:, :] = 0
                     self.trial_cnt = 1
                     return input_char
                 else:
@@ -106,13 +106,16 @@ class DataProcessor(DataClient):
 
     def get_data(self):
         super(DataProcessor, self).get_data()
-        self.process_data()
+        if not self.training_flag:
+            self.process_data()
 
     def process_data(self):
         # check onset
         data_buffer_len = round(self.sampleRate * self.timestep)
-        check_points = self.data[-data_buffer_len - self.updatepoints, -1]
-        onset_index = np.nonzero(np.diff(check_points) > .5)
+        if self.data.shape[0] < data_buffer_len:
+            return
+        check_points = self.data[-data_buffer_len - self.updatepoints:-data_buffer_len, -1]
+        onset_index = list(np.nonzero(np.diff(check_points) > .5))
         if onset_index:
             result = self.process_trial(onset_index[0] - data_buffer_len - self.updatepoints)
             if result is not None:
@@ -125,7 +128,7 @@ class DataProcessor(DataClient):
         self.onset_cnt = 0
         self.trial_cnt = 1
         self.prediction[:] = 0
-        self.epoches[:, :, :] = 0
+        self.epoches[:, :] = 0
         self.screen.string_buf = []
 
 
@@ -133,7 +136,8 @@ if __name__ == "__main__":
     # create qt object to run Qtimer
     app = QApplication(sys.argv)
     # connect
-    window = DataProcessor(chosen_channel=chosen_channel,
+    window = DataProcessor(fserp=fsErp,
+                           chosen_channel=chosen_channel,
                            istraining=False,
                            cut_pos_head=cut_pos_head,
                            cut_pos_tail=cut_pos_tail,
