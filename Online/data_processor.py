@@ -22,11 +22,12 @@ updateInterval = 0.04
 ipAddress = 'localhost'
 serverPort = 8712
 # in seconds
-bufferSize = 0.5
+bufferSize = 1.
 # prediction probability threshold
 th_p = 0.7
 mode = 'smart_stopping'
 assert mode in ['smart_stopping', 'fixed_trials'], 'Unsupported mode'
+
 
 # trigger问题尚未解决
 class DataProcessor(DataClient):
@@ -37,12 +38,15 @@ class DataProcessor(DataClient):
         self._cut_pos_tail = cut_pos_tail
         trial_buf_len = round(self.sampleRate * (cut_pos_tail - cut_pos_head))
         self.epoches = np.zeros((12, trial_buf_len))
-        self.training_flag = istraining
+        self.istraining = istraining
         try:
             self.classification_model = joblib.load('../svm_model.pkl')
-            self.scaler = joblib.load('../feature_scaler.pkl')
         except Exception as err:
             self.classification_model = None
+            print(err)
+        try:
+            self.scaler = joblib.load('../feature_scaler.pkl')
+        except Exception as err:
             self.scaler = None
             print(err)
         self.prediction = np.zeros((12,))
@@ -106,13 +110,13 @@ class DataProcessor(DataClient):
 
     def get_data(self):
         super(DataProcessor, self).get_data()
-        if not self.training_flag:
+        if not self.istraining:
             self.process_data()
 
     def process_data(self):
         # check onset
         data_buffer_len = round(self.sampleRate * self.timestep)
-        if self.data.shape[0] < data_buffer_len:
+        if self.data.shape[0] < data_buffer_len + self.updatepoints:
             return
         check_points = self.data[-data_buffer_len - self.updatepoints:-data_buffer_len, -1]
         onset_index = list(np.nonzero(np.diff(check_points) > .5))

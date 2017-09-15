@@ -22,4 +22,6 @@ class Screen(QDialog, Ui_Dialog):
         pass
 
     def run_experiment(self):
+        self.setWindowFlags(QDialog)
+        self.showFullScreen()
         print('run')

@@ -34,7 +34,8 @@ class DataClient(QMainWindow, Ui_MainWindow):
         else:
             self.updatepoints = sampleRate
         self.BytesCnt = 4 * nChan * self.updatepoints
-        self.cumtime = None
+        # x index used to plot data
+        self.cumtime = 0
         self.filecursor = None
 
         # gui settings
