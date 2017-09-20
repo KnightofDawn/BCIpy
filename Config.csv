@@ -8,3 +8,4 @@ n_rep_train,3
 erp_band_low,1
 erp_band_high,20
 best_channel,0
+sti_string,ABCDEFG

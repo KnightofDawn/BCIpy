@@ -23,3 +23,6 @@ def bytes2npz(path, nChan, samplerate):
     reshaped = np.reshape(unpacked, (-1, int(nChan)))
     reshaped[:, :-1] = _preprocess(reshaped[:, :-1], samplerate)
     return reshaped
+
+def nex2npz(path, nChan, samplerate):
+    

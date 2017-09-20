@@ -43,7 +43,8 @@ def average_signal(data, n_rep_exp, n_rep_train):
     data = np.reshape(data, (-1, n_rep_exp, 12, data.shape[1], data.shape[2]))
     # 5d tensor (n_char, n_rep_exp, 12, timestep, n_channel)
     data_averaged = np.empty((data.shape[0], n_rep_exp // n_rep_train, 12, data.shape[-2], data.shape[-1]))
-    for j, exp in enumerate(data):
+    for j in range(data.shape[0]):
+        exp = data[j]
         for i in range(0, exp.shape[0] - n_rep_train, n_rep_train):
             data_averaged[j, i // n_rep_train] = exp[:, i:i + n_rep_train].mean(axis=0)
     return data_averaged.reshape((-1, data_averaged.shape[-1]))
